@@ -3,6 +3,8 @@ import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 import csv  # better library compared to panda for less complicated text files
 import matplotlib.pyplot as plt
 
+import os
+
 
 # Create a class for a Polar H10 person
 class PolarUser:
@@ -59,7 +61,7 @@ class PolarUser:
         # Source InformationMarch 2005, Volume23(Issue3)Pages, p.289To - 297 - Journal of Sports Sciences
         for hr in hr_list:
             ee = self.gender * (-55.0969 + 0.5309 * hr + 0.1988 * self.weight + 0.2017 * self.age) + (
-                        1 - self.gender) * (-20.4022 + 0.4472 * hr - 0.1263 * self.weight + 0.074 * self.age)
+                    1 - self.gender) * (-20.4022 + 0.4472 * hr - 0.1263 * self.weight + 0.074 * self.age)
             ee_list.append(ee)
 
         return ee_list
@@ -78,6 +80,16 @@ class PolarUser:
 
         return time
 
+    # trim HR at peak
+    def trim_hr(self, t, hr):
+        maxVal = max(hr)
+        print(maxVal)
+        i = hr.index(maxVal)
+        trimHR = hr[0:i]
+        trimt = t[0:i]
+        return trimt, trimHR
+
+    # trim HR ~30s
 
     # Convert text file to EE
     def texttoee(self, filename):
@@ -89,25 +101,87 @@ class PolarUser:
         # convert RR to HR
         heart_rates = self.rrtohr(rr)
 
+        # trim HR when it peaks, need to trim time as well since they're plotted together
+        t_trim, hr_trim = self.trim_hr(time, heart_rates)
+
         # convert HR to EE
-        ee = self.hrtoee(heart_rates)
+        ee = self.hrtoee(hr_trim)
 
-        return time, ee
+        return t_trim, rr, hr_trim, ee
 
-# hack: instead of parsing time stamp, I could just use the RR itnerval as my time stamps
+    def process_files(self, type, filename_base_str, time_base_str, HR_trim_base_str, ee_base_str):
+        base_string = 'Ethan/ethan_BA_60_RR_'
+        colour_list = ['red', 'orange', 'yellow', '#90EE90', '#87CEFA']
+
+        # create a 2x2 subplot grid
+        fig, axs = plt.subplots(nrows=2, ncols=1, figsize=(10, 10))
+
+        # flatten the axs array to make it easier to iterate over
+        axs = axs.flatten()
+
+        # Assign names
+        ax1 = axs[0]
+        ax2 = axs[1]
+
+        for i in range(1, 6):
+            file_path = f"{filename_base_str}{i}.txt"
+            t_str = f"{time_base_str}{i}"
+            hr_str = f"{HR_trim_base_str}{i}"
+            ee_str = f"{ee_base_str}{i}"
+
+            if os.path.isfile(file_path):
+                # Perform some action on the file
+                print(f"Processing file: {file_path}")
+
+                # Process RR interval data into energy expenditure (EE) using Keytel's formula
+                t_str, _, hr_str, ee_str = self.texttoee(file_path)
+
+                # Plot HR
+                ax1.fill_between(t_str, hr_str, color=colour_list[i - 1], alpha=0.5, label=f'HR {type} {i}')
+
+                # Plot EE
+                ax2.fill_between(t_str, ee_str, color=colour_list[i - 1], alpha=0.5, label=f'EE {type} {i}')
+
+
+            else:
+                print(f"File not found: {file_path}")
+
+        # set the axis labels and title
+        ax1.set_xlabel('Time [minutes]')
+        ax2.set_xlabel('Time [minutes]')
+        ax1.set_ylabel('Heart Rate [beats/minute]')
+        ax2.set_ylabel('Energy Expenditure [kJ/minute]')
+        ax1.set_title(f'{type} HR for {base_string}')
+        ax2.set_title(f'{type} EE for {base_string}')
+
+        # add a legend to the plot
+        ax1.legend()
+        ax2.legend()
+
+        # display the plot
+        plt.show()
+
+        fig.savefig(f"{filename_base_str}.png")
+
+
+# hack: instead of parsing time stamp, I could just use the RR interval as my time stamps
 # Create Polar user
 ethan = PolarUser("Ethan", 22, 1, 80)  # name, age, gender [male=1], weight [kg]
+# Process files
+ethan.process_files('baseline', 'Ethan/ethan_BA_60_RR_', 'time_ethan_ee_', 'ethan_hr_trim_', 'ethan_ee_')
 
+'''
 # Process RR interval data into energy expenditure (EE) using Keytel's formula
-time_ethan_ee1, ethan_ee1 = ethan.texttoee('Ethan/ethan_BA_60_RR_1.txt')
-time_ethan_ee2, ethan_ee2 = ethan.texttoee('Ethan/ethan_BA_60_RR_2.txt')
-time_ethan_ee3, ethan_ee3 = ethan.texttoee('Ethan/ethan_BA_60_RR_3.txt')
-time_ethan_ee4, ethan_ee4 = ethan.texttoee('Ethan/ethan_BA_60_RR_4.txt')
-time_ethan_ee5, ethan_ee5 = ethan.texttoee('Ethan/ethan_BA_60_RR_5.txt')
+time_ethan_ee1, _, _, ethan_ee1 = ethan.texttoee('Ethan/ethan_BA_60_RR_1.txt')
+time_ethan_ee2, _, _, ethan_ee2 = ethan.texttoee('Ethan/ethan_BA_60_RR_2.txt')
+time_ethan_ee3, _, _, ethan_ee3 = ethan.texttoee('Ethan/ethan_BA_60_RR_3.txt')
+time_ethan_ee4, _, _, ethan_ee4 = ethan.texttoee('Ethan/ethan_BA_60_RR_4.txt')
+time_ethan_ee5, _, _, ethan_ee5 = ethan.texttoee('Ethan/ethan_BA_60_RR_5.txt')
 
 ##########################################################
 print(time_ethan_ee1)
 # Visualize data
+colour_list = ['red', 'orange', 'yellow', '#90EE90', '#87CEFA']
 
 # create the plot
 plt.fill_between(time_ethan_ee1, ethan_ee1, color='red', alpha=0.5, label='EE Baseline 1')
@@ -115,8 +189,6 @@ plt.fill_between(time_ethan_ee2, ethan_ee2, color='orange', alpha=0.5, label='EE
 plt.fill_between(time_ethan_ee3, ethan_ee3, color='yellow', alpha=0.5, label='EE Baseline 3')
 plt.fill_between(time_ethan_ee4, ethan_ee4, color='#90EE90', alpha=0.5, label='EE Baseline 4')
 plt.fill_between(time_ethan_ee5, ethan_ee5, color='#87CEFA', alpha=0.5, label='EE Baseline 5')
-
-
 
 # set the axis labels and title
 plt.xlabel('Time [minutes]')
@@ -128,3 +200,4 @@ plt.legend()
 
 # display the plot
 plt.show()
+'''
