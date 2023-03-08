@@ -133,7 +133,8 @@ class PolarUser:
 
         # create a 2x2 subplot grid
         fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(10, 10))
-        fig.tight_layout(h_pad=2)
+        # fig.tight_layout(h_pad=2)
+        fig.subplots_adjust(hspace=0.5)
 
         # flatten the axs array to make it easier to iterate over
         axs = axs.flatten()
@@ -162,10 +163,10 @@ class PolarUser:
                 avgEE_list.append(avg_ee_str)
 
                 # Plot HR
-                ax1.fill_between(t_str, hr_str, color=colour_list[i - 1], alpha=0.5, label=f'HR {type} {i} peak = {peak_hr_str} bpm')
+                ax1.fill_between(t_str, hr_str, color=colour_list[i - 1], alpha=0.5, label=f'HR t{i} peak = {peak_hr_str} bpm')
 
                 # Plot EE
-                ax2.fill_between(t_str, ee_str, color=colour_list[i - 1], alpha=0.5, label=f'EE {type} {i}, avg = {avg_ee_str} kJ/min')
+                ax2.fill_between(t_str, ee_str, color=colour_list[i - 1], alpha=0.5, label=f'EE t{i}, avg = {avg_ee_str} kJ/m')
 
             else:
                 print(f"File not found: {file_path}")
@@ -173,27 +174,27 @@ class PolarUser:
         # Plot peak HR over trials
         ax3.plot(peakHR_list)
         ax3.set_xlabel('Trial')
-        ax3.set_ylabel('Heart Rate [beats/minute]')
+        ax3.set_ylabel('Heart Rate [beats/minute]', fontsize='small')
         ax3.set_title(f'Peak HR for {type} {base_string}')
 
         # Plot avg EE over trials
         ax4.plot(avgEE_list)
         ax4.set_xlabel('Trial')
-        ax4.set_ylabel('Energy Expenditure [kJ/minute]')
+        ax4.set_ylabel('Energy Expenditure [kJ/minute]', fontsize='small')
         ax4.set_title(f'Average EE for {type} {base_string}')
 
         # set the axis labels and title
         ax1.set_xlabel('Time [minutes]')
-        ax1.set_ylabel('Heart Rate [beats/minute]')
+        ax1.set_ylabel('Heart Rate [beats/minute]', fontsize='small')
         ax1.set_title(f'{type} HR for {base_string}')
 
         ax2.set_xlabel('Time [minutes]')
-        ax2.set_ylabel('Energy Expenditure [kJ/minute]')
+        ax2.set_ylabel('Energy Expenditure [kJ/minute]', fontsize='small')
         ax2.set_title(f'{type} EE for {base_string}')
 
         # add a legend to the plot
-        ax1.legend()
-        ax2.legend()
+        ax1.legend(fontsize='x-small', loc='lower right')
+        ax2.legend(fontsize='x-small', loc='lower right')
 
         # display the plot
         plt.show()
