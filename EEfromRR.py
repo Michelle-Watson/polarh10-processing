@@ -123,8 +123,7 @@ class PolarUser:
         return t_trim, rr, hr_trim, ee, round(avg_ee), round(peak_hr)
 
     # def process_files(self, type, filename_base_str, time_base_str, HR_trim_base_str, ee_base_str, eeavg_base_str, hrpeak_base_str):
-    def process_files(self, type, filename_base_str):
-        base_string = 'Ethan/ethan_BA_60_RR_'
+    def process_files(self, type, filename_base_str, num_files_to_process):
         colour_list = ['red', 'orange', 'yellow', '#90EE90', '#87CEFA']
 
         # keep track of peak HR and avg EE through trials
@@ -145,7 +144,7 @@ class PolarUser:
         ax3 = axs[2]
         ax4 = axs[3]
 
-        for i in range(1, 6):
+        for i in range(1, num_files_to_process+1):
             file_path = f"{filename_base_str}{i}.txt"
             # t_str = f"{time_base_str}{i}"
             # hr_str = f"{HR_trim_base_str}{i}"
@@ -175,22 +174,22 @@ class PolarUser:
         ax3.plot(peakHR_list)
         ax3.set_xlabel('Trial')
         ax3.set_ylabel('Heart Rate [beats/minute]', fontsize='small')
-        ax3.set_title(f'Peak HR for {type} {base_string}')
+        ax3.set_title(f'Peak HR for {type}')  # {filename_base_str}
 
         # Plot avg EE over trials
         ax4.plot(avgEE_list)
         ax4.set_xlabel('Trial')
         ax4.set_ylabel('Energy Expenditure [kJ/minute]', fontsize='small')
-        ax4.set_title(f'Average EE for {type} {base_string}')
+        ax4.set_title(f'Average EE for {type}')
 
         # set the axis labels and title
         ax1.set_xlabel('Time [minutes]')
         ax1.set_ylabel('Heart Rate [beats/minute]', fontsize='small')
-        ax1.set_title(f'{type} HR for {base_string}')
+        ax1.set_title(f'{type} HR')  # for {self.name}
 
         ax2.set_xlabel('Time [minutes]')
         ax2.set_ylabel('Energy Expenditure [kJ/minute]', fontsize='small')
-        ax2.set_title(f'{type} EE for {base_string}')
+        ax2.set_title(f'{type} EE')
 
         # add a legend to the plot
         ax1.legend(fontsize='x-small', loc='lower right')
@@ -204,8 +203,24 @@ class PolarUser:
 
 # hack: instead of parsing time stamp, I could just use the RR interval as my time stamps
 # Create Polar user and Process files
-ethan = PolarUser("Ethan", 22, 1, 80)  # name, age, gender [male=1], weight [kg]
-ethan.process_files('baseline', 'Ethan/ethan_BA_60_RR_')
+
+# send in number of RR files as well for now
+ethan = PolarUser("Ethan", 22, 1, 78)  # name, age, gender [male=1], weight [kg]. Height = 177.8cm (5’10”)
+ethan.process_files('Baseline', 'Ethan/ethan_BA_60_RR_', 5)
+ethan.process_files('Harness', 'Ethan/ethan_Harness_60_RR_', 3)
+
+hanaan = PolarUser("Hanaan", 22, 0, 86)  # name, age, gender [male=1], weight [kg]. Height = 170cm
+hanaan.process_files('Baseline', 'Hanaan/hanaan_BA_40_RR_', 5)
+hanaan.process_files('Harness', 'Hanaan/hanaan_Harness_40_RR_', 5)
+
+sydney = PolarUser("Hanaan", 22, 0, 86)  # name, age, gender [male=1], weight [kg]. Height = 150cm
+sydney.process_files('Baseline', 'Sydney/sydney_BA_20_RR_', 5)
+sydney.process_files('Harness', 'Sydney/sydney_Harness_20_RR_', 5)
+# sydney_Harness_20_RR_2 -> peak HR at 52s. reached top of hill at ~37s
+
+mich = PolarUser("Hanaan", 22, 0, 61.2)  # name, age, gender [male=1], weight [kg]. Height = 161cm
+mich.process_files('Baseline', 'Mich/mich_BA_40_RR_', 5)
+mich.process_files('Harness', 'Mich/mich_Harness_40_RR_', 5)
 
 
 '''
