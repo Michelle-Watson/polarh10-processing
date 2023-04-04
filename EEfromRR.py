@@ -15,6 +15,18 @@ class PolarUser:
         self.age = age  # years
         self.weight = weight  # kg
 
+        self.baseline_PeakHR = []
+        self.baseline2_PeakHR = []
+        self.deer_PeakHR = []
+        self.DIYbelt_PeakHR = []
+        self.butteryfly_PeakHR = []
+
+        self.baseline_AvgEE = []
+        self.baseline2_AvgEE = []
+        self.deer_AvgEE = []
+        self.DIYbelt_AvgEE = []
+        self.butteryfly_AvgEE = []
+
     # Extract Polar Sensor Logger RR data from text file using csv library into list
     def loggertxt_to_rrlist_csv(self, filename):
         rr_intervals = []
@@ -84,15 +96,31 @@ class PolarUser:
     # trim HR at peak
     def trim_hr(self, t, hr):
         maxVal = max(hr)
+        minVal = min(hr)
+        startVal = hr[0]
+        delta_minmaxHR = maxVal - minVal
+        delta_startmaxHR = maxVal - startVal
         i = hr.index(maxVal)
+        """
+        print(f"i: {i}")
+        print(f"t[i]: {t[i]}")
+        print(f"hr: {hr}")
+        print(f"max: {maxVal}")
+        """
+        trimHR = hr
+        trimt = t
         # All trials took ~30s, so if the maxHR is hit too late or too early, just trim to a standard t=0.7s
-        if t[i] >= 0.7 or t[i] < 0.1:
+
+        # if time is greater than 0.7, trim to 0.7
+        # if t[i] >= 0.7:  # or t[i] < 0.1
+        if max(t) > 0.7:
             print(t[i])
             i = next(x for x, val in enumerate(t) if val > 0.7)
             print(i)
-        trimHR = hr[0:i]
-        trimt = t[0:i]
-        return trimt, trimHR, maxVal
+            trimHR = hr[0:i]
+            trimt = t[0:i]
+
+        return trimt, trimHR, maxVal, delta_minmaxHR, delta_startmaxHR
 
     # trim HR ~30s
 
@@ -113,14 +141,14 @@ class PolarUser:
                 write.writerow(heart_rates)
 
         # trim HR when it peaks, need to trim time as well since they're plotted together
-        t_trim, hr_trim, peak_hr = self.trim_hr(time, heart_rates)
+        t_trim, hr_trim, peak_hr, delta_minmaxHR, delta_startmaxHR = self.trim_hr(time, heart_rates)
 
         # convert HR to EE
         ee = self.hrtoee(hr_trim)
         print(ee)
         avg_ee = mean(ee)
 
-        return t_trim, rr, hr_trim, ee, round(avg_ee), round(peak_hr)
+        return t_trim, rr, hr_trim, ee, round(avg_ee), round(peak_hr), round(delta_minmaxHR), round(delta_startmaxHR)
 
     # def process_files(self, type, filename_base_str, time_base_str, HR_trim_base_str, ee_base_str, eeavg_base_str, hrpeak_base_str):
     def process_files(self, type, filename_base_str, num_files_to_process):
@@ -157,18 +185,36 @@ class PolarUser:
                 print(f"Processing file: {file_path}")
 
                 # Process RR interval data into energy expenditure (EE) using Keytel's formula
-                t_str, _, hr_str, ee_str, avg_ee_str, peak_hr_str = self.texttoee(file_path)
+                t_str, _, hr_str, ee_str, avg_ee_str, peak_hr_str, delta_minmaxHR, delta_startmaxHR = self.texttoee(file_path)
                 peakHR_list.append(peak_hr_str)
                 avgEE_list.append(avg_ee_str)
 
                 # Plot HR
-                ax1.fill_between(t_str, hr_str, color=colour_list[i - 1], alpha=0.5, label=f'HR t{i} peak = {peak_hr_str} bpm')
+                ax1.fill_between(t_str, hr_str, color=colour_list[i - 1], alpha=0.5, label=f'HR t{i} peak = {peak_hr_str} bpm, delta_minmaxHR = {delta_minmaxHR}, delta_startmaxHR = {delta_startmaxHR}')
 
                 # Plot EE
                 ax2.fill_between(t_str, ee_str, color=colour_list[i - 1], alpha=0.5, label=f'EE t{i}, avg = {avg_ee_str} kJ/m')
 
             else:
                 print(f"File not found: {file_path}")
+
+        # save important vars to object depending on type
+        if type == "Baseline":
+            self.baseline_PeakHR = peakHR_list
+            self.baseline_AvgEE = avgEE_list
+
+        elif type == "Deer":
+            self.deer_PeakHR = peakHR_list
+            self.deer_AvgEE = avgEE_list
+
+        elif type == "DIYBelt":
+            self.DIYbelt_PeakHR = peakHR_list
+            self.DIYbelt_AvgEE = avgEE_list
+
+        elif type == "Butterfly":
+            self.butteryfly_PeakHR = peakHR_list
+            self.butteryfly_AvgEE = avgEE_list
+
 
         # Plot peak HR over trials
         ax3.plot(peakHR_list)
@@ -204,6 +250,8 @@ class PolarUser:
 # hack: instead of parsing time stamp, I could just use the RR interval as my time stamps
 # Create Polar user and Process files
 
+'''
+# Prelim Testing (round 1)
 # send in number of RR files as well for now
 ethan = PolarUser("Ethan", 22, 1, 78)  # name, age, gender [male=1], weight [kg]. Height = 177.8cm (5’10”)
 ethan.process_files('Baseline', 'Ethan/ethan_BA_60_RR_', 5)
@@ -213,17 +261,50 @@ hanaan = PolarUser("Hanaan", 22, 0, 86)  # name, age, gender [male=1], weight [k
 hanaan.process_files('Baseline', 'Hanaan/hanaan_BA_40_RR_', 5)
 hanaan.process_files('Harness', 'Hanaan/hanaan_Harness_40_RR_', 5)
 
-sydney = PolarUser("Hanaan", 22, 0, 86)  # name, age, gender [male=1], weight [kg]. Height = 150cm
+sydney = PolarUser("Sydney", 22, 0, 86)  # name, age, gender [male=1], weight [kg]. Height = 150cm
 sydney.process_files('Baseline', 'Sydney/sydney_BA_20_RR_', 5)
 sydney.process_files('Harness', 'Sydney/sydney_Harness_20_RR_', 5)
 # sydney_Harness_20_RR_2 -> peak HR at 52s. reached top of hill at ~37s
 
-mich = PolarUser("Hanaan", 22, 0, 61.2)  # name, age, gender [male=1], weight [kg]. Height = 161cm
+mich = PolarUser("Michelle", 22, 0, 61.2)  # name, age, gender [male=1], weight [kg]. Height = 161cm
 mich.process_files('Baseline', 'Mich/mich_BA_40_RR_', 5)
 mich.process_files('Harness', 'Mich/mich_Harness_40_RR_', 5)
 
+# Testing (round 2-3)
+# NEW: Baseline, Deer harness, DIY (belt and suspenders) - iteration 1, Butteryfly - iteration 2 that uses straps from deer harness
+hanaan = PolarUser("Hanaan", 22, 0, 86)  # name, age, gender [male=1], weight [kg]. Height = 170cm
+hanaan.process_files('Baseline', 'Hanaan/hanaan_BA2_40_RR_', 5)
+hanaan.process_files('Deer', 'Hanaan/hanaan_Deer_40_RR_', 5)
+hanaan.process_files('DIYBelt', 'Hanaan/hanaan_DIYBelt_40_RR_', 5)
+hanaan.process_files('Butterfly', 'Hanaan/hanaan_Butterfly_40_RR_', 5)
+
+ethan = PolarUser("Ethan", 22, 1, 78)  # name, age, gender [male=1], weight [kg]. Height = 177.8cm (5’10”)
+ethan.process_files('Baseline', 'Ethan/ethan_BA2_60_RR_', 5)
+ethan.process_files('Deer', 'Ethan/ethan_Deer_60_RR_', 5)
+ethan.process_files('DIYBelt', 'Ethan/ethan_DIYBelt_60_RR_', 5)
+ethan.process_files('Butterfly', 'Ethan/ethan_Butterfly_60_RR_', 5)
+
+
+# NEW: Baseline, Deer harness, DIY (belt and suspenders) - iteration 1, Butteryfly - iteration 2 that uses straps from deer harness
+ethan = PolarUser("Ethan", 22, 1, 78)  # name, age, gender [male=1], weight [kg]. Height = 177.8cm (5’10”)
+ethan.process_files('DIYBelt', 'Ethan/ethan_DIYBelt_60_RR_', 5)
+
+
+
+sydney = PolarUser("Sydney", 22, 0, 86)  # name, age, gender [male=1], weight [kg]. Height = 150cm
+sydney.process_files('Deer', 'Sydney/sydney_Deer_20_RR_', 5)
+sydney.process_files('Baseline', 'Sydney/sydney_BA2_20_RR_', 5)
+'''
+
+mich = PolarUser("Michelle", 22, 0, 61.2)  # name, age, gender [male=1], weight [kg]. Height = 161cm
+mich.process_files('Baseline', 'Mich/mich_BA2_40_RR_', 5)
+mich.process_files('Deer', 'Mich/mich_Deer_40_RR_', 5)
+mich.process_files('DIYBelt', 'Mich/mich_DIYBelt_40_RR_', 5)
+mich.process_files('Butterfly', 'Mich/mich_Butterfly_40_RR_', 5)
 
 '''
+##########################################################
+
 ethan.process_files('baseline', 'Ethan/ethan_BA_60_RR_', 'time_ethan_ee_', 'ethan_hr_trim_', 'ethan_ee_', 'ethan_avg_ee', 'ethan_peak_hr')
 # Process RR interval data into energy expenditure (EE) using Keytel's formula
 time_ethan_ee1, _, _, ethan_ee1 = ethan.texttoee('Ethan/ethan_BA_60_RR_1.txt')
@@ -232,7 +313,7 @@ time_ethan_ee3, _, _, ethan_ee3 = ethan.texttoee('Ethan/ethan_BA_60_RR_3.txt')
 time_ethan_ee4, _, _, ethan_ee4 = ethan.texttoee('Ethan/ethan_BA_60_RR_4.txt')
 time_ethan_ee5, _, _, ethan_ee5 = ethan.texttoee('Ethan/ethan_BA_60_RR_5.txt')
 
-##########################################################
+
 print(time_ethan_ee1)
 # Visualize data
 colour_list = ['red', 'orange', 'yellow', '#90EE90', '#87CEFA']

@@ -1,0 +1,515 @@
+---
+title: "harnessANOVA"
+output: html_document
+date: "2023-04-02"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+# Order of Data
+# Person #1, Harness A: average of 5 peak heart rates
+# Person #1, Harness B: average of 5 peak heart rates
+# Person #1, Harness C: average of 5 peak heart rates
+# Person #1, Harness D: average of 5 peak heart rates
+# Person #2, Harness A: average of 5 peak heart rates
+# Person #2, Harness B: average of 5 peak heart rates
+# Person #2, Harness C: average of 5 peak heart rates
+# Person #2, Harness D: average of 5 peak heart rates
+# Person #3, Harness A: average of 5 peak heart rates
+# Person #3, Harness B: average of 5 peak heart rates
+# Person #3, Harness C: average of 5 peak heart rates
+# Person #3, Harness D: average of 5 peak heart rates
+# Person #4, Harness A: average of 5 peak heart rates
+# Person #4, Harness B: average of 5 peak heart rates
+# Person #4, Harness C: average of 5 peak heart rates
+# Person #4, Harness D: average of 5 peak heart rates
+
+```
+
+Non-Weighted Means - Average Peak HR
+```{r cars}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:3, each = 4), rep(4, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 4)
+peak_heart_rate <- c(141, 135, 124, 124, 173, 166, 167, 124, 154, 154, 158, 153, 145, 140, NA, NA)
+# check length of each vector
+length(person) # should be 16
+length(harness_type) # should be 16
+length(peak_heart_rate) # should be 16
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data, weights = weights)
+anova(model_ANOVA1) # Type 1
+```
+
+Weighted Means - Average Peak HR
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+# NEW with weighted means
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:3, each = 4), rep(4, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 4)
+avg_heart_rate <- c(141, 135, 124, 124, 173, 166, 167, 124, 154, 154, 158, 153, 145, 140, NA, NA)
+sd_avg_heart_rate <- c(1.854723699, 3.261901286, 7.493997598, 9.316651759,
+                        2.315167381, 1.939071943, 16.93044595, 9.316651759,
+                        4.118252056, 3.18747549, 6.216108107, 1.019803903,
+                        4.019950248, 2.244994432, NA, NA)
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  avg_heart_rate = avg_heart_rate,
+  sd_avg_heart_rate = sd_avg_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+# Calculate weights
+heart_rate_data$weights <- 1 / (heart_rate_data$sd_avg_heart_rate ^ 2)
+
+# Fit weighted ANOVA model
+library(lmtest)
+model <- lm(avg_heart_rate ~ harness_type, data = heart_rate_data, weights = weights)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(avg_heart_rate ~ person + harness_type, data = heart_rate_data, weights = weights)
+anova(model_ANOVA1) # Type 1
+
+```
+Non-Weighted Means - Average Peak HR, Just Ethan, 5 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(140, 139, 134, 131,
+                     141, 136, 128, 138,
+                     140, 129, 128, 116,
+                     141, 134, 117, 113,
+                     145, 135, 114, 122)
+
+# check length of each vector
+length(person) # should be 16
+length(harness_type) # should be 16
+length(peak_heart_rate) # should be 16
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+Non-Weighted Means - EE, Just Ethan, 5 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(27, 31, 28, 24,
+29, 28, 23, 25,
+28, 26, 26, 18,
+27, 24, 21, 17,
+29, 25, 20, 19)
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+Non-Weighted Means - HR, Hanaan, 5 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(177, 165, 134, 131,
+172, 169, 117, 138,
+172, 166, 122, 116,
+173, 166, 157, 113,
+170, 163, 157, 122)
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+Non-Weighted Means - EE, Hanaan, 5 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(36, 33, 33, 24,
+39, 37, 19, 25,
+37, 34, 20, 18,
+37, 35, 31, 17,
+36, 33, 31, 19)
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+Non-Weighted Means - HR, Mich, 5 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(147, 149, 169, 154,
+154, 154, 158, 151,
+158, 154, 157, 152,
+152, 153, 152, 153,
+158, 159, 152, 153)
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+Non-Weighted Means - EE, Mich, 5 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(29, 24, 39, 32,
+31, 32, 34, 28,
+29, 26, 28, 34,
+33, 26, 32, 32,
+35, 34, 34, 33)
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+Non-Weighted Means - HR, All, 15 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(140, 139, 134, 131,
+141, 136, 128, 138,
+140, 129, 128, 116,
+141, 134, 117, 113,
+145, 135, 114, 122,
+177, 165, 134, 131,
+172, 169, 117, 138,
+172, 166, 122, 116,
+173, 166, 157, 113,
+170, 163, 157, 122,
+147, 149, 169, 154,
+154, 154, 158, 151,
+158, 154, 157, 152,
+152, 153, 152, 153,
+158, 159, 152, 153)
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+Non-Weighted Means - EE, All, 15 trials per harness
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:4, each = 4), rep(6, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 5)
+# Ethan
+peak_heart_rate <- c(27, 31, 28, 24,
+29, 28, 23, 25,
+28, 26, 26, 18,
+27, 24, 21, 17,
+29, 25, 20, 19,
+36, 33, 33, 24,
+39, 37, 19, 25,
+37, 34, 20, 18,
+37, 35, 31, 17,
+36, 33, 31, 19,
+29, 24, 39, 32,
+31, 32, 34, 28,
+29, 26, 28, 34,
+33, 26, 32, 32,
+35, 34, 34, 33)
+
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+library(lmtest)
+model_ANOVA1 <- lm(peak_heart_rate ~ person + harness_type, data = heart_rate_data)
+anova(model_ANOVA1) # Type 1
+```
+
+####################################################
+# BIG BREAK
+
+Non-weighted Means - EE
+```{r cars}
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:3, each = 4), rep(4, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 4)
+peak_heart_rate <- c(141, 135, 124, 124, 173, 166, 167, 124, 154, 154, 158, 153, 145, 140, NA, NA)
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  peak_heart_rate = peak_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+library(car)
+model <- lm(peak_heart_rate ~ harness_type, data = heart_rate_data)
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+# Kruskal-Wallis test
+kruskal.test(peak_heart_rate ~ harness_type, data = heart_rate_data)
+```
+
+
+Weighted Means - EE
+```{r, eval=TRUE, echo=TRUE, fig.align ='center', tidy=FALSE}
+# NEW with weighted means
+heart_rate_data = 0
+# sample data
+person <- c(rep(1:3, each = 4), rep(4, times = 4))
+harness_type <- rep(c("Baseline", "Deer Harness", "Belt and Suspenders", "Butterfly Harness"), each = 4)
+avg_heart_rate <- c(141, 135, 124, 124, 173, 166, 167, 124, 154, 154, 158, 153, 145, 140, NA, NA)
+sd_avg_heart_rate <- c(1.854723699, 3.261901286, 7.493997598, 9.316651759,
+                        2.315167381, 1.939071943, 16.93044595, 9.316651759,
+                        4.118252056, 3.18747549, 6.216108107, 1.019803903,
+                        4.019950248, 2.244994432, NA, NA)
+# create data frame
+heart_rate_data <- data.frame(
+  person = person,
+  harness_type = harness_type,
+  avg_heart_rate = avg_heart_rate,
+  sd_avg_heart_rate = sd_avg_heart_rate
+)
+
+heart_rate_data <- na.omit(heart_rate_data)
+
+# Calculate weights
+heart_rate_data$weights <- 1 / (heart_rate_data$sd_avg_heart_rate ^ 2)
+
+# Fit weighted ANOVA model
+library(lmtest)
+model <- lm(avg_heart_rate ~ harness_type, data = heart_rate_data, weights = weights)
+# anova(model) # Type 1
+Anova(model, type = "II")
+
+# Test for normality
+shapiro.test(model$residuals)
+
+# Test for equal variances
+leveneTest(model$residuals, heart_rate_data$harness_type)
+
+# Kruskal-Wallis test
+kruskal.test(avg_heart_rate ~ harness_type, data = heart_rate_data)
+
+
+```
+
+
+
+
